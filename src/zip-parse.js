@@ -1,10 +1,18 @@
 import fs from 'fs'
-import { resolve } from 'path'
+import path,{ resolve } from 'path'
 import Module from 'module'
 import Archive, { znorm, zjoin } from './archive'
 
 export default function (path) {
   return new Archive(path)
+}
+
+// window 下，eslint 路径加载不了
+if (process.platform === 'win32') {
+  const pjoin = path.join.bind(path)
+  path.join = function () {
+    return znorm(pjoin.apply(path, arguments))
+  }
 }
 
 const ZIP_CACHE = {};
@@ -70,8 +78,7 @@ function tryFile(zip, entry) {
     if (stat && !stat.isDirectory()) {
       return zip.realpathSync(entry, Module._realpathCache);
     }
-  }
-  catch (e) { /* ignore ENOENT exception */ }
+  } catch (e) { /* ignore ENOENT exception */ }
 
   return false;
 }
@@ -102,7 +109,7 @@ function tryPackage(zip, entry, exts) {
     fs[name] = function (path, arg1, arg2) {
       path = resolve(path) // webpack loader : resolve( loader/../../file )
       let idx = path.indexOf(".zip");
-      const pidx = path.indexOf('package.json');// readFile: mods.zip/package.json -> /package.json
+      const pidx = path.indexOf('package.json'); // readFile: mods.zip/package.json -> /package.json
       if (pidx !== -1 && pidx - 5 === idx) {
         path = path.substr(0, idx - 5) + path.substr(pidx - 1)
         idx = path.indexOf(".zip");
@@ -142,7 +149,10 @@ function tryPackage(zip, entry, exts) {
 
     const trailingSlash = (request.slice(-1) === '/');
 
-    const cacheKey = JSON.stringify({ request: request, paths: paths });
+    const cacheKey = JSON.stringify({
+      request: request,
+      paths: paths
+    });
     if (Module._pathCache[cacheKey]) {
       return Module._pathCache[cacheKey];
     }
