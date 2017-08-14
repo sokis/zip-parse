@@ -20,10 +20,6 @@ export default {
         }),
         builtins(),
         commonjs(),
-        uglify({
-            mangle: {
-                properties: true
-            }
-        })
+        uglify()
     ]
 }
